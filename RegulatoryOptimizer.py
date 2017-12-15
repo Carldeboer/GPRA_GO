@@ -17,6 +17,36 @@ def mutateSequence(randomizer, args, individual):
 			individual[i]=getRandomBase(randomizer, args)
 	return individual, 
 
+	
+def seqsToOHC(seqX):
+	ohcX = np.zeros((np.shape(seqX)[0],4,np.shape(seqX)[1],1))
+	for i in range(0,4):#bases
+		for j in range(0,np.shape(seqX)[0]):
+			ohcX[j,i,[x==BASEORDER[i] for x in seqX[j,:]],:]=1;
+	return (ohcX)
+
+def	evaluateThese(sess, seqX, args):
+	numSeqs=np.shape(ohcX)[0]
+	ohcX = seqsToOHC(seqX);
+	predY = np.zeros(numSeqs);
+	z=0
+	while z < numSeqs:
+		curPredY = sess.run([predELY], feed_dict={ohcX: ohcX[z:(z+args['batch_size']),:,:,:]})
+		predY[z:(z+args['batch_size'])] = curPredY; 
+		z=z+args['batch_size']
+	return (predY);
+
+def seqSelectionRound(sess, population, toolbox, args):
+	offspring = algorithms.varAnd(population, toolbox, cxpb=args['cspb'], mutpb=args['mutpb'])
+	fits = evaluateThese(sess, offspring,args);
+	for fit, ind in zip(fits, offspring):
+		ind.fitness.values = fit
+	population = toolbox.select(offspring, k=len(population))
+	return (population);
+	
+
+
+
 def runExample():
 	args  = {'sequence_length' : 110 , 'nucleotide_frequency' : [0.25,0.25,0.25,0.25], 'mutation_frequency' : 0.05 } 
 	np.random.seed(1239571243);
